@@ -1,0 +1,99 @@
+## Using geospatial town coordinates 
+
+# Install CRAN packages
+install.packages(c("ggplot2", "sf", "dplyr", "readxl"))
+
+# List of packages to load
+packages <- c("ggplot2", "sf", "dplyr", "readxl")
+
+# Load all packages
+lapply(packages, library, character.only = TRUE)
+
+# Set the working directory where project is saved
+setwd("Y:/AP_Compliance/Projects/BEAR data analysis")
+
+# List files in the directory to confirm which file to load
+## copy and paste to load excel file
+list.files("Y:/AP_Compliance/Projects/BEAR data analysis")
+
+# Load the complaints data
+complaints_data <- read_excel("Y:/AP_Compliance/Projects/BEAR data analysis/2023/2023_Data_BEAR.xlsx")
+
+# Load the town coordinates data from CSV
+town_coordinates <- read.csv("Y:/AP_Compliance/Projects/BEAR data analysis/town_centroids.csv")
+
+# Standardize town names to upper case
+complaints_data$Town <- toupper(trimws(complaints_data$Town))
+town_coordinates$TownName <- toupper(trimws(town_coordinates$TOWNNAME))
+
+# Check the changes
+head(complaints_data)
+head(town_coordinates)
+
+# Join the complaints data with town coordinates data
+complaints_with_coords <- complaints_data %>%
+  left_join(town_coordinates, by = c("Town" = "TOWNNAME"))
+
+# Check the joined data
+head(complaints_with_coords)
+
+# Convert to spatial data
+complaints_data_sf <- complaints_with_coords %>%
+  st_as_sf(coords = c("Longitude", "Latitude"), crs = 4326)
+
+# Read the county boundaries shapefile
+county_boundaries <- st_read("FS_VCGI_OPENDATA_Boundary_BNDHASH_poly_counties_SP_v1_-196546973346571976 (2).geojson")
+
+# Test reading a known good file if available
+## Replace with an actual path to a test file
+test_shapefile <- st_read("FS_VCGI_OPENDATA_Boundary_BNDHASH_poly_counties_SP_v1_-196546973346571976 (2).geojson")
+
+# rename the data file 
+county_boundaries <- st_read("FS_VCGI_OPENDATA_Boundary_BNDHASH_poly_counties_SP_v1_-196546973346571976 (2).geojson")
+
+# Plot the map with Vermont counties and complaint data points
+ggplot() +
+  geom_sf(data = county_boundaries, fill = "lightgray", color = "black") +
+  geom_sf(data = complaints_data_sf, 
+          color = "blue",   
+          shape = 21,       
+          size = 3,         
+          alpha = 0.4)+ #indicates 0 < alpha < 1: The plotted elements have partial transparency. The closer the value is to 0, the more transparent the elements become, and the closer it is to 1, the more opaque they appear.
+    
+  labs(title = "Open Burning Complaints", 
+       subtitle = "Data Points by Town for 2023",
+       caption = "Source: BEAR 2.0") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = .6),         
+        plot.subtitle = element_text(hjust = .6),
+        plot.caption = element_text(hjust = .6))
+
+### TESTING METHOD TO IDENTIFY DATAPOINTS BY SIZE 
+# Extract coordinates from spatial data
+complaints_coords <- st_coordinates(complaints_data_sf) %>%
+  as.data.frame() %>%
+  rename(Longitude = X, Latitude = Y) %>%
+  bind_cols(complaints_data_sf %>% st_drop_geometry())
+
+# Aggregate complaints by location
+complaints_agg <- complaints_coords %>%
+  group_by(Latitude, Longitude) %>%
+  summarise(Count = n(), .groups = 'drop') %>%
+  st_as_sf(coords = c("Longitude", "Latitude"), crs = 4326)
+
+# Plot with varying point sizes
+ggplot() +
+  geom_sf(data = county_boundaries, fill = "lightgray", color = "black") +
+  geom_sf(data = complaints_agg, 
+          aes(size = Count),  # Size by count
+          color = "blue",   
+          shape = 21,       
+          alpha = 0.7) +
+  scale_size(range = c(2, 10)) +  # Adjust the size range
+  labs(title = "Spatial Distribution of Open Burning Complaints", 
+       subtitle = "by Towns in 2023",
+       caption = "Source: BEAR 2.0") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = .6),         
+        plot.subtitle = element_text(hjust = .6),
+        plot.caption = element_text(hjust = .6))
