@@ -23,64 +23,48 @@ list.files("Y:/AP_Compliance/Projects/BEAR data analysis")
 # Load the complaints data
 ## This is the only file name that will chnage based on year
 ### Use the following naming method to keep files organized Y:/AP_Compliance/Projects/BEAR data analysis/XXXX/XXXX_Data_BEAR.xlsx"
-complaints_data <- read_excel("")
+complaints_data <- read_excel("Y:/AP_Compliance/Projects/BEAR data analysis/2023/2023_Data_BEAR.xlsx")
 
-# Load the counties coordinates data
+# Load the county coordinates data
 counties_data <- read_csv("Y:/AP_Compliance/Projects/BEAR data analysis/County_Coordinates.csv")
 
-# Convert complaints data to spatial data
-## not sure this is needed if not using town coordinates to map data points? 
-complaints_data_sf <- complaints_data %>%
-  mutate(Latitude = as.numeric(Latitude),
-         Longitude = as.numeric(Longitude)) %>%
-  st_as_sf(coords = c("Longitude", "Latitude"), crs = 4326)
+# Load the county boundaries data
+## Data retrieved from https://geodata.vermont.gov/datasets/003794d558074f9e98158c46f8265878/explore 
+### downloaded as a GeoJSON file 
+county_boundaries <- st_read("FS_VCGI_OPENDATA_Boundary_BNDHASH_poly_counties_SP_v1_-196546973346571976 (2).geojson")
 
 # Convert counties data to spatial data
+## Converting data to spatial format (sf) is essential for geographic analysis and visualization, as it allows for spatial operations like joining datasets based on location and plotting geographic features accurately on maps.
 counties_data_sf <- counties_data %>%
   mutate(Latitude = as.numeric(Latitude),
          Longitude = as.numeric(Longitude)) %>%
   st_as_sf(coords = c("Longitude", "Latitude"), crs = 4326)
 
-# Join/combine county coordinates data to complaints data
-complaints_data_sf <- complaints_data_sf %>%
-  st_join(counties_data_sf, join = st_within) %>%
-  mutate(County = coalesce(County.y, County.x)) %>%
-  select(-County.x, -County.y)
-
 # Aggregate the number of complaints by county
-complaints_count <- complaints_data_sf %>%
+complaints_count <- complaints_data %>%
   group_by(County) %>%
   summarize(Complaints = n(), .groups = 'drop')
 
-# Convert counties_data_sf to data frame
-counties_data_df <- as.data.frame(counties_data_sf)
+# Ensure proper case and matching
+## when downloaded from BEAR vs 
+complaints_count$County <- str_to_upper(complaints_count$County)
+counties_data_sf$County <- str_to_upper(counties_data_sf$County)
 
-# Join aggregated complaints data
-counties_data_df <- counties_data_df %>%
+# Join the complaints count with the counties data
+counties_data_sf <- counties_data_sf %>%
   left_join(complaints_count, by = "County")
-
-# Convert back to an sf object
-counties_data_sf <- st_as_sf(counties_data_df, crs = st_crs(counties_data_sf))
-
-# Test reading a known good file if available
-## Replace with an actual path to a test file
-test_shapefile <- st_read("FS_VCGI_OPENDATA_Boundary_BNDHASH_poly_counties_SP_v1_-196546973346571976 (2).geojson")
-
-# rename the data file 
-county_boundaries <- st_read("FS_VCGI_OPENDATA_Boundary_BNDHASH_poly_counties_SP_v1_-196546973346571976 (2).geojson")
 
 # Plot the map with Vermont boundaries and complaint density
 ggplot() +
-  
   # Plot the boundaries
-  geom_sf (data = county_boundaries, fill = "white", color = "black") +
+  geom_sf(data = county_boundaries, fill = "white", color = "black") +
   
   # Add complaint data
   geom_sf(data = counties_data_sf, aes(size = Complaints, color = Complaints), alpha = 0.6) +
   
   # Customize color and size scales
   scale_color_viridis_c(option = "cividis", name = "Number of Complaints") +
-  scale_size_continuous(range = c(1, 10)) + # Removed/did not include Size legend name
+  scale_size_continuous(range = c(1, 10)) +
   
   # Add titles and labels
   labs(title = "Number of Open Burn Complaints", 
@@ -90,3 +74,4 @@ ggplot() +
   # Customize the theme and hide the size legend
   theme_minimal() +
   guides(size = "none") # Hide the size legend
+
