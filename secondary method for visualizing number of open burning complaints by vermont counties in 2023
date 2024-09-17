@@ -1,0 +1,77 @@
+## secondary method for visualizing Number of open burn complaints by vermont counties in 2023 
+# Install necessary packages
+install.packages(c("tidyverse", "ggplot2", "sf", "viridis"))
+install.packages("devtools")
+devtools::install_github("ropensci/rnaturalearthhires")
+
+# Load necessary packages
+library(tidyverse)
+library(ggplot2)
+library(sf)
+library(viridis)
+
+# Set the working directory where project is saved
+setwd("Y:/AP_Compliance/Projects/BEAR data analysis")
+
+# Load the complaints data
+complaints_data <- read_excel("Y:/AP_Compliance/Projects/BEAR data analysis/2023/2023_Data_BEAR.xlsx")
+
+# Load the county boundaries data
+county_boundaries <- st_read("FS_VCGI_OPENDATA_Boundary_BNDHASH_poly_counties_SP_v1_-196546973346571976 (2).geojson")
+
+# Aggregate the number of complaints by county
+complaints_count <- complaints_data %>%
+  group_by(County) %>%
+  summarize(Complaints = n(), .groups = 'drop')
+
+# Convert column names to uppercase for consistency
+# downloads of data are not uniform, i found it eaiser to standardize this change in the code
+county_boundaries$CNTYNAME <- toupper(county_boundaries$CNTYNAME)
+complaints_count$County <- toupper(complaints_count$County)
+
+# Perform the join operation
+county_boundaries <- county_boundaries %>%
+  left_join(complaints_count, by = c("CNTYNAME" = "County"))
+
+# Check the column names and first few rows after join command to ensure it worked
+colnames(county_boundaries)
+head(county_boundaries)
+
+# Plot the map with Vermont county boundaries and complaint density
+ggplot() +
+  # Plot the boundaries filled by number of complaints
+  geom_sf(data = county_boundaries, aes(fill = Complaints), color = "black") +
+  
+  # Customize color scale
+  scale_fill_viridis_c(option = "cividis", name = "Number of Complaints", na.value = "grey") +
+  
+  # Add titles and labels
+  labs(title = "Number of Open Burn Complaints", 
+       subtitle = "by Vermont Counties in 2023",
+       caption = "Source: BEAR 2.0") +
+  
+  # Customize the theme
+  theme_minimal()
+
+## TESTING NEW KEY TO BETTER VISUALIZE "PROBLEM AREAS" 
+
+# Create a categorical variable for discrete color bins
+county_boundaries <- county_boundaries %>%
+  mutate(Complaints_cat = cut(Complaints, breaks = c(-Inf, 0, 5, 10, 20, Inf), 
+                              labels = c("0", "1-5", "6-10", "11-20", "21+")))
+
+# Plot the map with Vermont county boundaries and complaint density
+ggplot() +
+  # Plot the boundaries filled by number of complaints categories
+  geom_sf(data = county_boundaries, aes(fill = Complaints_cat), color = "black") +
+  
+  # Customize color scale with discrete colors
+  scale_fill_viridis_d(name = "Number of Complaints", option = "cividis") +
+  
+  # Add titles and labels
+  labs(title = "Number of Open Burn Complaints", 
+       subtitle = "by Vermont Counties in 2023",
+       caption = "Source: BEAR 2.0") +
+  
+  # Customize the theme
+  theme_minimal()
