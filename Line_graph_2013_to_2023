@@ -11,7 +11,7 @@ lapply(packages, library, character.only = TRUE)
 setwd("Y:/AP_Compliance/Projects/BEAR data analysis/Time series analysis")
 
 # Load the complaints data
-decade_data <- read_excel("Y:/AP_Compliance/Projects/BEAR data analysis/Time series analysis/10_years_BEAR_data.xlsx")
+decade_data <- read_excel("Y:/AP_Compliance/Projects/BEAR data analysis/Time series analysis/11_years_BEAR_data.xlsx")
 
 #dates are formatted as "MM/DD/YYYY"
 ##However, when you convert these to a Date class, R expects them in the format "YYYY-MM-DD".
@@ -43,7 +43,7 @@ ggplot(decade_data_agg, aes(x = Year, y = Complaints)) +
 setwd("Y:/AP_Compliance/Projects/BEAR data analysis/Time series analysis")
 
 # Load the complaints data, I do this after clearing objects from the workspace when working on a new graph 
-decade_data <- read_excel("Y:/AP_Compliance/Projects/BEAR data analysis/Time series analysis/10_years_BEAR_data.xlsx")
+decade_data <- read_excel("Y:/AP_Compliance/Projects/BEAR data analysis/Time series analysis/11_years_BEAR_data.xlsx")
 
 # Ensure DateReceived is in Date format (you've done this before)
 decade_data$DateReceived <- as.Date(decade_data$DateReceived, format = "%m/%d/%Y")
