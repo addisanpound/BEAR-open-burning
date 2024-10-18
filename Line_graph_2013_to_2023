@@ -1,0 +1,118 @@
+# Install CRAN packages
+install.packages(c("readxl", "writexl" , "ggplot2", "dplyr", "lubridate", "RColorBrewer", "tidyr"))
+
+# List of packages to load
+packages <- c("readxl", "writexl" , "ggplot2", "dplyr", "lubridate", "RColorBrewer", "tidyr")
+
+# Load all packages
+lapply(packages, library, character.only = TRUE)
+
+# Set the working directory where project is saved
+setwd("Y:/AP_Compliance/Projects/BEAR data analysis/Time series analysis")
+
+# Load the complaints data
+decade_data <- read_excel("Y:/AP_Compliance/Projects/BEAR data analysis/Time series analysis/10_years_BEAR_data.xlsx")
+
+#dates are formatted as "MM/DD/YYYY"
+##However, when you convert these to a Date class, R expects them in the format "YYYY-MM-DD".
+###You can explicitly convert the dates using as.Date() with the correct format specified:
+decade_data$DateReceived <- as.Date(decade_data$DateReceived, format = "%m/%d/%Y")
+str(decade_data$DateReceived)
+
+# Aggregate by year
+decade_data_agg <- decade_data %>%
+  mutate(Year = year(DateReceived)) %>%         # Extract year
+  group_by(Year) %>%                             # Group by year
+  summarize(Complaints = n(), .groups = 'drop') # Aggregate complaints
+
+# Create the line graph for all complaints in vermont 2013 to 2023 
+ggplot(decade_data_agg, aes(x = Year, y = Complaints)) +
+  geom_line(color = "blue") +  # Choose a color that's colorblind-friendly
+  geom_point(color = "blue") +  # Add points
+  labs(title = "2013 to 2023",
+       x = "Year",
+       y = "Number of Open Burn Complaints") +
+  scale_x_continuous(breaks = seq(2013, 2023, by = 1)) +  # Set x-axis to show each year
+  theme_minimal() +
+  theme(text = element_text(size = 12))  # Adjust text size if needed
+
+
+# Plotting each County over the years 
+
+# Set the working directory where project is saved
+setwd("Y:/AP_Compliance/Projects/BEAR data analysis/Time series analysis")
+
+# Load the complaints data, I do this after clearing objects from the workspace when working on a new graph 
+decade_data <- read_excel("Y:/AP_Compliance/Projects/BEAR data analysis/Time series analysis/10_years_BEAR_data.xlsx")
+
+# Ensure DateReceived is in Date format (you've done this before)
+decade_data$DateReceived <- as.Date(decade_data$DateReceived, format = "%m/%d/%Y")
+
+# Now aggregate by year and county
+decade_data_agg_county <- decade_data %>%
+  mutate(Year = year(DateReceived)) %>%         # Extract year
+  group_by(Year, County) %>%                    # Group by year and county
+  summarize(Complaints = n(), .groups = 'drop') # Aggregate complaints
+
+# View the aggregated dataset
+View(decade_data_agg_county)
+
+# Specify the path where you want to save the file
+output_path <- "Y:/AP_Compliance/Projects/BEAR data analysis/Time series analysis/decade_data_county.xlsx"
+
+# Export the data to an Excel file
+## done so to clean up data 
+write_xlsx(decade_data_agg_county, path = output_path)
+
+# Load the complaints data
+data <- read_excel("Y:/AP_Compliance/Projects/BEAR data analysis/Time series analysis/data_county.xlsx")
+
+custom_colors <- c(
+  "Addison" = "#E69F00",   # Orange
+  "Bennington" = "#56B4E9", # Light Blue
+  "Caledonia" = "#009E73",  # Teal
+  "Chittenden" = "#F0E442",  # Yellow
+  "Essex" = "#000000",      # Black
+  "Franklin" = "#FF1493",   # Hot Pink
+  "Grand Isle" = "#003D7A", # Dark Blue
+  "Lamoille" = "#999999",   # Gray
+  "Orange" = "#F0A3FF",     # Light Purple
+  "Orleans" = "#A4D65E",    # Light Green
+  "Rutland" = "#FFA07A",    # Light Coral
+  "Washington" = "#E41A1C", # Red
+  "Windham" = "#8B009A",    # Dark Magenta
+  "Windsor" = "#D2B48C"     # Tan
+)
+
+# Define custom shapes
+custom_shapes <- c(
+  "Addison" = 15,   # Square
+  "Bennington" = 17, # Triangle
+  "Caledonia" = 18,  # Diamond
+  "Chittenden" = 19,  # Circle with border
+  "Essex" = 20,      # Filled circle
+  "Franklin" = 21,   # Circle with fill, border
+  "Grand Isle" = 22, # Square with fill
+  "Lamoille" = 23,   # Hexagon
+  "Orange" = 24,     # Octagon
+  "Orleans" = 25,    # Cross
+  "Rutland" = 3,     # Plus
+  "Washington" = 4,  # X
+  "Windham" = 5,     # Triangle down
+  "Windsor" = 6      # Circle
+)
+
+
+# Create the line graph with custom shapes
+ggplot(data, aes(x = Year, y = Complaints, color = County, shape = County)) +
+  geom_line() +  # Lines for each county
+  geom_point(size = 2.5) +  # Points for each county with custom shapes
+  labs(title = "Number of Open Burn Complaints by County Over the Years",
+       x = "Year",
+       y = "Number of Complaints") +
+  scale_color_manual(values = custom_colors) +  # Apply custom colors
+  scale_shape_manual(values = custom_shapes) +   # Apply custom shapes
+  scale_x_continuous(breaks = seq(2013, max(data$Year), by = 1)) +  # Set x-axis to yearly intervals
+  theme_minimal() +
+  theme(text = element_text(size = 14))
+
