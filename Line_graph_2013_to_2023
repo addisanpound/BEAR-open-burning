@@ -11,22 +11,22 @@ lapply(packages, library, character.only = TRUE)
 setwd("Y:/AP_Compliance/Projects/BEAR data analysis/Time series analysis")
 
 # Load the complaints data
-decade_data <- read_excel("Y:/AP_Compliance/Projects/BEAR data analysis/Time series analysis/11_years_BEAR_data.xlsx")
+data <- read_excel("Y:/AP_Compliance/Projects/BEAR data analysis/Time series analysis/11_years_BEAR_data.xlsx")
 
 #dates are formatted as "MM/DD/YYYY"
 ##However, when you convert these to a Date class, R expects them in the format "YYYY-MM-DD".
 ###You can explicitly convert the dates using as.Date() with the correct format specified:
-decade_data$DateReceived <- as.Date(decade_data$DateReceived, format = "%m/%d/%Y")
-str(decade_data$DateReceived)
+data$DateReceived <- as.Date(data$DateReceived, format = "%m/%d/%Y")
+str(data$DateReceived)
 
 # Aggregate by year
-decade_data_agg <- decade_data %>%
+data_agg <- data %>%
   mutate(Year = year(DateReceived)) %>%         # Extract year
   group_by(Year) %>%                             # Group by year
   summarize(Complaints = n(), .groups = 'drop') # Aggregate complaints
 
 # Create the line graph for all complaints in vermont 2013 to 2023 
-ggplot(decade_data_agg, aes(x = Year, y = Complaints)) +
+ggplot(data_agg, aes(x = Year, y = Complaints)) +
   geom_line(color = "blue") +  # Choose a color that's colorblind-friendly
   geom_point(color = "blue") +  # Add points
   labs(title = "2013 to 2023",
@@ -43,26 +43,26 @@ ggplot(decade_data_agg, aes(x = Year, y = Complaints)) +
 setwd("Y:/AP_Compliance/Projects/BEAR data analysis/Time series analysis")
 
 # Load the complaints data, I do this after clearing objects from the workspace when working on a new graph 
-decade_data <- read_excel("Y:/AP_Compliance/Projects/BEAR data analysis/Time series analysis/11_years_BEAR_data.xlsx")
+county_data <- read_excel("Y:/AP_Compliance/Projects/BEAR data analysis/Time series analysis/11_years_BEAR_data.xlsx")
 
 # Ensure DateReceived is in Date format (you've done this before)
-decade_data$DateReceived <- as.Date(decade_data$DateReceived, format = "%m/%d/%Y")
+county_data$DateReceived <- as.Date(county_data$DateReceived, format = "%m/%d/%Y")
 
 # Now aggregate by year and county
-decade_data_agg_county <- decade_data %>%
+county_data_agg_county <- county_data %>%
   mutate(Year = year(DateReceived)) %>%         # Extract year
   group_by(Year, County) %>%                    # Group by year and county
   summarize(Complaints = n(), .groups = 'drop') # Aggregate complaints
 
 # View the aggregated dataset
-View(decade_data_agg_county)
+View(county_data_agg_county)
 
 # Specify the path where you want to save the file
-output_path <- "Y:/AP_Compliance/Projects/BEAR data analysis/Time series analysis/decade_data_county.xlsx"
+output_path <- "Y:/AP_Compliance/Projects/BEAR data analysis/Time series analysis/county_data_county.xlsx"
 
 # Export the data to an Excel file
 ## done so to clean up data 
-write_xlsx(decade_data_agg_county, path = output_path)
+write_xlsx(county_data_agg_county, path = output_path)
 
 # Load the complaints data
 data <- read_excel("Y:/AP_Compliance/Projects/BEAR data analysis/Time series analysis/data_county.xlsx")
